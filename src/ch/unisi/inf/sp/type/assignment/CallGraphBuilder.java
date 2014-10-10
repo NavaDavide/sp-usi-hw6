@@ -2,10 +2,13 @@ package ch.unisi.inf.sp.type.assignment;
 
 import java.util.List;
 
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import ch.unisi.inf.sp.type.framework.CallSite;
 import ch.unisi.inf.sp.type.framework.ClassAnalyzer;
 import ch.unisi.inf.sp.type.framework.ClassHierarchy;
 import ch.unisi.inf.sp.type.framework.ClassType;
@@ -36,9 +39,21 @@ public final class CallGraphBuilder implements ClassAnalyzer {
 				final Method method = type.getMethod(methodNode.name, methodNode.desc);
 				final InsnList instructions = methodNode.instructions;
 				for (int i=0; i<instructions.size(); i++) {
-					
 					// TODO implement this
-					
+					if (instructions.get(i).getType() != AbstractInsnNode.METHOD_INSN)
+						continue;
+					MethodInsnNode insn = (MethodInsnNode) instructions.get(i);
+					int opcode = instructions.get(i).getOpcode();
+					CallSite cs = new CallSite(opcode, insn.owner, insn.name, insn.desc);
+					switch (opcode) {
+					case 184: //INVOKE_STATIC
+						cs.addPossibleTargetClass(hierarchy.getOrCreateClass(insn.owner));
+						method.addCallSite(cs);
+						break;
+
+					default:
+						break;
+					}
 				}
 			}
 		} catch (final TypeInconsistencyException ex) {
