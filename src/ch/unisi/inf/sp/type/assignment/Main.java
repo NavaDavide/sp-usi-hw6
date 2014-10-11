@@ -35,7 +35,8 @@ public final class Main {
 		
 		// dump info about structure (e.g. inheritance hierarchy, call graph, statistics, ...)
 		// TODO probably change this
-		new Dumper().dumpDot(classHierarchyBuilder.getClassHierarchy(), "graph.dot");
-		
+		Dumper dumper = new Dumper();
+		dumper.dumpDot(classHierarchyBuilder.getClassHierarchy(), "graph.dot");
+		dumper.dumpPrint(classHierarchyBuilder.getClassHierarchy(), "test");
 	}
 }

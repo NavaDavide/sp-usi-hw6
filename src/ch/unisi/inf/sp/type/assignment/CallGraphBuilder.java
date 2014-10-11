@@ -1,5 +1,6 @@
 package ch.unisi.inf.sp.type.assignment;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -45,12 +46,59 @@ public final class CallGraphBuilder implements ClassAnalyzer {
 					MethodInsnNode insn = (MethodInsnNode) instructions.get(i);
 					int opcode = instructions.get(i).getOpcode();
 					CallSite cs = new CallSite(opcode, insn.owner, insn.name, insn.desc);
+					method.addCallSite(cs);
+					if (instructions.get(i).getType() != AbstractInsnNode.METHOD_INSN)
+						continue;
+					ClassType targetClass = hierarchy.getOrCreateClass(((MethodInsnNode)insn).owner);
+					Method targetMethod = targetClass.getMethod(((MethodInsnNode)insn).name, ((MethodInsnNode)insn).desc);
+					if(targetMethod == null){
+						continue;
+					}
+					
+					ClassType superT = hierarchy.getOrCreateClass(insn.owner).getSuperClass();
 					switch (opcode) {
 					case 184: //INVOKE_STATIC
 						cs.addPossibleTargetClass(hierarchy.getOrCreateClass(insn.owner));
-						method.addCallSite(cs);
 						break;
-
+					case 183: //INVOKE_SPECIAL
+						while (superT != null) {
+							if(superT.getMethod(method.getName(), method.getDescriptor())!=null){	
+								cs.addPossibleTargetClass(superT);
+							}
+							superT = superT.getSuperClass();
+						}
+						break;
+					case 182: //INVOKE VIRTUAL
+						while (superT != null) {
+							if(superT.getSuperClass() == null){	
+								final Method supMethod = superT.getMethod(insn.name, insn.desc);
+								if(supMethod!=null){
+									if(supMethod.isAbstract())
+										cs.addPossibleTargetClass(superT);
+								}
+							}
+							superT = superT.getSuperClass();
+						}
+						if(method!=null){
+							if(method.isAbstract())
+								cs.addPossibleTargetClass(targetClass);
+						}
+						List <ClassType> sub = new ArrayList<ClassType>(hierarchy.getOrCreateClass(insn.owner).getSubTypes());
+						while(!sub.isEmpty()){
+							ClassType subType = sub.get(0);
+							//System.out.println(subType.getInternalName());
+							sub.remove(0);
+								List<Method> methods = new ArrayList<Method>(subType.getMethods());
+								for (Method methodz : methods) {
+									if(methodz.getName().equals(method.getName())){
+										if(!methodz.isAbstract() && methodz!= null) {
+											cs.addPossibleTargetClass(subType);
+										}
+									}
+								}
+							sub.addAll(subType.getSubTypes());						
+						}
+						break;
 					default:
 						break;
 					}
