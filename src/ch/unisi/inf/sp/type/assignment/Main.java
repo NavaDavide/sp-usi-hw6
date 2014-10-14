@@ -35,8 +35,14 @@ public final class Main {
 		
 		// dump info about structure (e.g. inheritance hierarchy, call graph, statistics, ...)
 		// TODO probably change this
-		Dumper dumper = new Dumper();
-		dumper.dumpDot(classHierarchyBuilder.getClassHierarchy(), "graph.dot");
-		dumper.dumpPrint(classHierarchyBuilder.getClassHierarchy(), "test");
+		for(String arg : args){
+			String[] temp = arg.split("/");
+			String[] fileN = temp[temp.length-1].split("\\.");
+			String fileName = fileN[0];
+			
+			Dumper dumper = new Dumper();
+			dumper.dumpDot(classHierarchyBuilder.getClassHierarchy(), "graph.dot");
+			dumper.dumpPrint(classHierarchyBuilder.getClassHierarchy(), fileName);
+		}
 	}
 }
